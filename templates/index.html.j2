@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat</title>
+</head>
+<body>
+    <h1>WebSocket Chat</h1>
+    <h2>Your Group ID: {{ group_id }}</h2>
+    <h2>Your Client ID: {{ client_id }}</h2>
+    <form action="" onsubmit="sendMessage(event)">
+        <input type="email" id="senderEmail" placeholder="Your Email" required autocomplete="off"/><br/>
+        <input type="email" id="receiverEmail" placeholder="Receiver Email" required autocomplete="off"/><br/>
+        <input type="text" id="messageText" placeholder="Message" required autocomplete="off"/><br/>
+        <button>Send</button>
+    </form>
+    <ul id='messages'>
+    </ul>
+    <script>
+        // Las variables group_id y client_id provistas por Jinja2
+        var group_id = "{{ group_id }}";
+        var client_id = "{{ client_id }}";
+
+        document.querySelector("#ws-id").textContent = client_id;
+
+        var ws = new WebSocket(`ws://localhost:8000/ws/group/${group_id}/client/${client_id}`);
+
+        ws.onmessage = function(event) {
+            var messages = document.getElementById('messages')
+            var message = document.createElement('li')
+
+            // Aquí se asume que el backend envía los datos en formato JSON
+            var data = JSON.parse(event.data);
+            var contentText = `From: ${data.sender}, To: ${data.to} - ${data.message}`;
+            var content = document.createTextNode(contentText);
+
+            message.appendChild(content);
+            messages.appendChild(message);
+        };
+
+        function sendMessage(event) {
+            event.preventDefault();
+
+            var sender = document.getElementById("senderEmail").value;
+            var receiver = document.getElementById("receiverEmail").value;
+            var message = document.getElementById("messageText").value;
+
+            var emailData = {
+                sender: sender,
+                to: receiver,
+                message: message
+            };
+
+            ws.send(JSON.stringify(emailData));
+
+            document.getElementById("senderEmail").value = '';
+            document.getElementById("receiverEmail").value = '';
+            document.getElementById("messageText").value = '';
+        }
+    </script>
+</body>
+</html>
