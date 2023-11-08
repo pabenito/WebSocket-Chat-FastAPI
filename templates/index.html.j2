@@ -5,11 +5,9 @@
 </head>
 <body>
     <h1>WebSocket Chat</h1>
-    <h2>Your Group ID: {{ group_id }}</h2>
-    <h2>Your Client ID: {{ client_id }}</h2>
+    <h2>Your Group: {{ group_id }}</h2>
+    <h2>Your Client: {{ client_id }}</h2>
     <form action="" onsubmit="sendMessage(event)">
-        <input type="email" id="senderEmail" placeholder="Your Email" required autocomplete="off"/><br/>
-        <input type="email" id="receiverEmail" placeholder="Receiver Email" required autocomplete="off"/><br/>
         <input type="text" id="messageText" placeholder="Message" required autocomplete="off"/><br/>
         <button>Send</button>
     </form>
@@ -20,42 +18,54 @@
         var group_id = "{{ group_id }}";
         var client_id = "{{ client_id }}";
 
-        document.querySelector("#ws-id").textContent = client_id;
+        var ws = null;
 
-        var ws = new WebSocket(`ws://localhost:8000/ws/group/${group_id}/client/${client_id}`);
+        function connectWebSocket() {
+            // Assuming the WebSocket URL pattern is similar to the backend FastAPI endpoint
+            ws = new WebSocket(`ws://localhost:8000/ws/group/${group_id}/client/${client_id}`);
 
-        ws.onmessage = function(event) {
-            var messages = document.getElementById('messages')
-            var message = document.createElement('li')
-
-            // Aquí se asume que el backend envía los datos en formato JSON
-            var data = JSON.parse(event.data);
-            var contentText = `From: ${data.sender}, To: ${data.to} - ${data.message}`;
-            var content = document.createTextNode(contentText);
-
-            message.appendChild(content);
-            messages.appendChild(message);
-        };
-
-        function sendMessage(event) {
-            event.preventDefault();
-
-            var sender = document.getElementById("senderEmail").value;
-            var receiver = document.getElementById("receiverEmail").value;
-            var message = document.getElementById("messageText").value;
-
-            var emailData = {
-                sender: sender,
-                to: receiver,
-                message: message
+            ws.onmessage = function(event) {
+                var messages = document.getElementById('messages');
+                var message = document.createElement('li');
+                var content = document.createTextNode(event.data);
+                message.appendChild(content);
+                messages.appendChild(message);
             };
 
-            ws.send(JSON.stringify(emailData));
+            ws.onclose = function(event) {
+                console.log('WebSocket closed:', event);
+            };
 
-            document.getElementById("senderEmail").value = '';
-            document.getElementById("receiverEmail").value = '';
-            document.getElementById("messageText").value = '';
+            ws.onerror = function(event) {
+                console.error('WebSocket error:', event);
+            };
         }
+
+        function sendMessage(event) {
+            var senderEmail = client_id;
+            var groupEmail = group_id;
+            var messageText = document.getElementById("messageText").value;
+
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                var emailData = {
+                    sender: senderEmail,
+                    group: groupEmail,
+                    message: messageText
+                };
+                ws.send(JSON.stringify(emailData));
+            } else {
+                console.error("WebSocket is not connected.");
+            }
+
+            // Clear input fields after sending
+            document.getElementById("messageText").value = '';
+
+            // Prevent form submission
+            event.preventDefault();
+        }
+
+        // Call connectWebSocket when the script loads
+        connectWebSocket();
     </script>
 </body>
 </html>

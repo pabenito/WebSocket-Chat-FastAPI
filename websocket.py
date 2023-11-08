@@ -15,10 +15,6 @@ class ConnectionManager:
     def disconnect(self, websocket: WebSocket, group: str):
         self.active_connections[group].remove(websocket)
 
-    @staticmethod
-    async def send_single(message, websocket: WebSocket):
-        await websocket.send_text(message)
-
     async def send_group(self, message, group: str):
         for connection in self.active_connections[group]:
-            await connection.send_text(message)
+            await connection.send_json(message)

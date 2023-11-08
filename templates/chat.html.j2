@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Chat</title>
+    </head>
+    <body>
+        <h1>WebSocket Chat</h1>
+        <h2>Your Group: {{ group }}</h2>
+        <h2>Your Client: {{ client }}</h2>
+        <form action="" onsubmit="sendMessage(event)">
+            <input type="text" id="messageText" autocomplete="off"/>
+            <button>Send</button>
+        </form>
+        <ul id='messages'>
+        </ul>
+    </body>
+    <script>
+        var group = "{{ group }}";
+        var client = "{{ client }}";
+        ws = new WebSocket(`ws://localhost:8000/ws/group/${group}/client/${client}`);
+        ws.onmessage = function(event) {
+            var message_obj = JSON.parse(event.data)
+            var messages = document.getElementById('messages')
+            var message = document.createElement('li')
+            var content = document.createTextNode(`${message_obj.sender}: ${message_obj.message}`)
+            message.appendChild(content)
+            messages.appendChild(message)
+        };
+        ws.onclose = function(event) {
+            console.log('WebSocket closed:', event);
+        };
+
+        ws.onerror = function(event) {
+            console.error('WebSocket error:', event);
+        };
+        function sendMessage(event) {
+            var input = document.getElementById("messageText")
+            var message = {
+                    sender: client,
+                    group: group,
+                    message: input.value
+                };
+            ws.send(JSON.stringify(message));
+            input.value = ''
+            event.preventDefault()
+        }
+    </script>
+</html>
